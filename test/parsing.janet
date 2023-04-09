@@ -31,4 +31,3 @@ It is a quality note
 
 (test (parse-metas "---\ntags: test, good times\ntimestamp: 2023-02-03T04:42:32\n---\nSome good stuff")
       {:tags ["test" "good times"] :timestamp 1675399352})
-

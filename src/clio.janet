@@ -4,29 +4,6 @@
 # I type some bullshit command
 # I then type coach n --tags="databases,yugabyte,whatnot" "bullshit command"
 
-# To make an brand-new notebook file, do
-# (write-notebook "your-filename.jimage" (empty-notebook))
-(defn empty-notebook
-  "produces an empty notebook. Not often needed"
-  [] @{:notes @[]})
-
-# We want to keep an image with
-(defn write-notebook
-  "writes notes as a pickle into the given filename"
-  [filename notes]
-  (spit filename (marshal notes make-image-dict)))
-
-(defn read-notebook
-  "reads notes from the disk"
-  [filename]
-  (load-image (slurp filename)))
-
-# TODO remove
-(defn cat
-  [filename]
-  (let [book (read-notebook filename)]
-    (each note (book :notes) (printf "%p" note))))
-
 (def empty-note-text
     "---\ntags:\n---\nPut the body of your note here\n")
 
@@ -93,4 +70,35 @@
 	       [])
        ]
     {:timestamp timestamp :tags (tuple ;tags)}))
+
+# To make an brand-new notebook file, do
+# (write-notebook "your-filename.jimage" (empty-notebook))
+(defn empty-notebook
+  "produces an empty notebook. Not often needed"
+  [] @{:notes @[]})
+
+# We want to keep an image with
+(defn write-notebook
+  "writes notes as a pickle into the given filename"
+  [filename notes]
+  (spit filename (marshal notes make-image-dict)))
+
+(defn read-notebook
+  "reads notes from the disk"
+  [filename]
+  (load-image (slurp filename)))
+
+(defn add-note!
+  "mutates notebook and adds new note"
+  [notebook new-text]
+  (let [meta (parse-metas new-text)
+	note {:text new-text :previous :empty-note}]
+    (array/push (notebook :notes) {:meta meta :note note})
+    notebook))
+
+# TODO remove
+(defn cat
+  [filename]
+  (let [book (read-notebook filename)]
+    (each note (book :notes) (printf "%p" note))))
 
