@@ -28,7 +28,7 @@
     (each note (book :notes) (printf "%p" note))))
 
 (def empty-note-text
-    "---\ntags:\ntimestamp: auto\n---\nPut the body of your note here\n")
+    "---\ntags:\n---\nPut the body of your note here\n")
 
 (defn to-text
   [note]
@@ -83,13 +83,14 @@
 	metas (struct ;cleaned)
 	mts (metas "timestamp")
 	mtags (metas "tags")
-	timestamp (or
-		    (when mts (parsed-timestamp-to-time
-			       ;(peg/match timestamp-peg mts)))
-		    (os/time))
+	timestamp (or (when mts
+			(when-let
+			    [parse (peg/match timestamp-peg mts)]
+			  (parsed-timestamp-to-time ;parse)))
+		      (os/time))
 	tags (or
 	       (when mtags (map string/trim (string/split "," mtags)))
 	       [])
        ]
     {:timestamp timestamp :tags (tuple ;tags)}))
-    
+

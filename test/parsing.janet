@@ -10,7 +10,6 @@
       `
 ---
 tags:
-timestamp: auto
 ---
 Put the body of your note here
 

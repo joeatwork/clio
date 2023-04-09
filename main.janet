@@ -1,4 +1,5 @@
 (import sh)
+(import ./src/clio)
 
 (defn edit-string
   "dumps a string into an editor, opens $EDITOR"
@@ -14,4 +15,9 @@
 
 
 (defn main [&]
-  (print (edit-string "Here's where the good stuff goes\n")))
+  (let [tmpl (clio/to-text :empty-note)
+	new-text (edit-string tmpl)
+	new-meta (clio/parse-metas new-text)]
+    (pp new-meta)
+    (print new-text)))
+	
