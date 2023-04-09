@@ -8,10 +8,10 @@
 (defn new-note
   "creates a new note with no ancestors"
   [body & tags]
-  @{:body body
-    :date (os/date)
-    :edits @[]
+  {:body body
     :tags tags
+    :timestamp (os/time)
+    :versions :none
     })
 
 # To make an brand-new notebook file, do
@@ -49,7 +49,46 @@
   (let [book (read-notebook filename)]
  (find |(string/find needle ($ :body)) (book :notes))))
 
+# TODO
 (defn cat
   [filename]
   (let [book (read-notebook filename)]
     (each note (book :notes) (printf "%p" note))))
+
+(def empty-note-text
+    "---\ntags:\n---\nPut the body of your note here\n")
+
+(defn to-text
+  [note]
+  (if (= note :empty-note)
+    empty-note-text
+    (let [tag-list (string/join (note :tags) ", ")
+	  headers [(string "tags: " tag-list)] ]
+      (string
+       ;(mapcat |(tuple $ "\n")
+		["---" ;headers "---" (note :body)])))))
+
+(defn pair-to-meta
+  "parse helper for captured key / value pairs"
+  [raw-k raw-v]
+  (let [k (string/trim raw-k)
+	v (string/trim raw-v)]
+  [(keyword k) v]))
+
+# Parses [(k v) (k v) (k v) body] 
+(def note-text-peg
+  (peg/compile ~{
+		:meta-key (some (if-not (+ ":" "\n") 1))
+		:meta-val (any (if-not "\n" 1))
+		:meta-line (replace (* (<- :meta-key) ":" (<- :meta-val) "\n") ,pair-to-meta)
+		:metas (+ "---\n" (* :meta-line :metas))
+		:main (* "---\n" :metas (<- (any 1) :body))
+		}))
+
+(defn from-text
+  [text]
+  (let [parsed (peg/match note-text-peg text)
+	[body & metas] (reverse! parsed)]
+    # TODO parse tags out of metas
+    {:body body
+     :metas metas }))
