@@ -1,18 +1,8 @@
-#!/usr/bin/env janet
+#!/usr/bin/env jane#!/usr/bin/env janet
 
 # Simple user story
 # I type some bullshit command
 # I then type coach n --tags="databases,yugabyte,whatnot" "bullshit command"
-
-
-(defn new-note
-  "creates a new note with no ancestors"
-  [body & tags]
-  {:body body
-    :tags tags
-    :timestamp (os/time)
-    :versions :none
-    })
 
 # To make an brand-new notebook file, do
 # (write-notebook "your-filename.jimage" (empty-notebook))
@@ -31,64 +21,75 @@
   [filename]
   (load-image (slurp filename)))
 
-(defn n
-  "write a new note into a notebook"
-  [filename body & tags]
-  # This'll tend to corrupt notebooks
-  # if you're very lucky - consider
-  # an emacs-like backup scheme or something.
-  (let [note (new-note body ;tags)
-	book (read-notebook filename)]
-    (array/push (book :notes) note)
-    (write-notebook filename book)))
-
-# TODO give this a PEG or a predicate or something
-(defn match-note
-  "simple substring search for a note"
-  [filename needle]
-  (let [book (read-notebook filename)]
- (find |(string/find needle ($ :body)) (book :notes))))
-
-# TODO
+# TODO remove
 (defn cat
   [filename]
   (let [book (read-notebook filename)]
     (each note (book :notes) (printf "%p" note))))
 
 (def empty-note-text
-    "---\ntags:\n---\nPut the body of your note here\n")
+    "---\ntags:\ntimestamp: auto\n---\nPut the body of your note here\n")
 
 (defn to-text
   [note]
   (if (= note :empty-note)
     empty-note-text
-    (let [tag-list (string/join (note :tags) ", ")
-	  headers [(string "tags: " tag-list)] ]
-      (string
-       ;(mapcat |(tuple $ "\n")
-		["---" ;headers "---" (note :body)])))))
+    (note :text)))
 
-(defn pair-to-meta
-  "parse helper for captured key / value pairs"
-  [raw-k raw-v]
-  (let [k (string/trim raw-k)
-	v (string/trim raw-v)]
-  [(keyword k) v]))
+(defn parsed-timestamp-to-time
+  "takes strings pulled from a timestamp-peg style timestamp and returns unixtime"
+  [year month day &opt hour minute second]
+  (os/mktime {:year (scan-number year)
+	      :month (- (scan-number month) 1)
+	      :month-day (- (scan-number day) 1)
+	      :hours (when hour (scan-number hour))
+	      :minutes (when minute (scan-number minute))
+	      :seconds (when second (scan-number second))}))
 
-# Parses [(k v) (k v) (k v) body] 
-(def note-text-peg
+# A likely buggy local ISO 8601 timestamp
+(def timestamp-peg
+  (peg/compile ~{
+		:time (* (<- (2 :d)) ":" (<- (2 :d)) (? (* ":" (<- (2 :d)))))
+		:date (* (<- (4 :d)) "-" (<- (2 :d)) "-" (<- (2 :d)))
+		:main (* :date (? (* "T" :time)) -1)
+		}))
+
+(defn format-timestamp
+  [unixtime]
+  (let [date (os/date unixtime)]
+    (string/format "%0.4d-%0.2d-%0.2dT%0.2d:%0.2d:%0.2d"
+		   (date :year)
+		   (+ (date :month) 1)
+
+		   (+ (date :month-day) 1)
+		   (date :hours)
+		   (date :minutes)
+		   (date :seconds))))
+
+
+(def note-metas-peg
   (peg/compile ~{
 		:meta-key (some (if-not (+ ":" "\n") 1))
 		:meta-val (any (if-not "\n" 1))
-		:meta-line (replace (* (<- :meta-key) ":" (<- :meta-val) "\n") ,pair-to-meta)
+		:meta-line (* (<- :meta-key) ":" (<- :meta-val) "\n")
 		:metas (+ "---\n" (* :meta-line :metas))
-		:main (* "---\n" :metas (<- (any 1) :body))
+		:main (* "---\n" :metas)
 		}))
 
-(defn from-text
-  [text]
-  (let [parsed (peg/match note-text-peg text)
-	[body & metas] (reverse! parsed)]
-    # TODO parse tags out of metas
-    {:body body
-     :metas metas }))
+(defn parse-metas
+  [note-text]
+  (let [raw-metas (peg/match note-metas-peg note-text)
+	cleaned (map string/trim raw-metas)
+	metas (struct ;cleaned)
+	mts (metas "timestamp")
+	mtags (metas "tags")
+	timestamp (or
+		    (when mts (parsed-timestamp-to-time
+			       ;(peg/match timestamp-peg mts)))
+		    (os/time))
+	tags (or
+	       (when mtags (map string/trim (string/split "," mtags)))
+	       [])
+       ]
+    {:timestamp timestamp :tags (tuple ;tags)}))
+    
