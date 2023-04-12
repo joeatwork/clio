@@ -5,7 +5,7 @@
 # I then type coach n --tags="databases,yugabyte,whatnot" "bullshit command"
 
 (def empty-note-text
-    "---\ntags:\n---\nPut the body of your note here\n")
+  "---\ntags:\n---\nPut the body of your note here\n")
 
 (defn to-text
   [note]
@@ -17,58 +17,53 @@
   "takes strings pulled from a timestamp-peg style timestamp and returns unixtime"
   [year month day &opt hour minute second]
   (os/mktime {:year (scan-number year)
-	      :month (- (scan-number month) 1)
-	      :month-day (- (scan-number day) 1)
-	      :hours (when hour (scan-number hour))
-	      :minutes (when minute (scan-number minute))
-	      :seconds (when second (scan-number second))}))
+              :month (- (scan-number month) 1)
+              :month-day (- (scan-number day) 1)
+              :hours (when hour (scan-number hour))
+              :minutes (when minute (scan-number minute))
+              :seconds (when second (scan-number second))}))
 
 # A likely buggy local ISO 8601 timestamp
 (def timestamp-peg
-  (peg/compile ~{
-		:time (* (<- (2 :d)) ":" (<- (2 :d)) (? (* ":" (<- (2 :d)))))
-		:date (* (<- (4 :d)) "-" (<- (2 :d)) "-" (<- (2 :d)))
-		:main (* :date (? (* "T" :time)) -1)
-		}))
+  (peg/compile ~{:time (* (<- (2 :d)) ":" (<- (2 :d)) (? (* ":" (<- (2 :d)))))
+                 :date (* (<- (4 :d)) "-" (<- (2 :d)) "-" (<- (2 :d)))
+                 :main (* :date (? (* "T" :time)) -1)}))
 
 (defn format-timestamp
   [unixtime]
   (let [date (os/date unixtime)]
     (string/format "%0.4d-%0.2d-%0.2dT%0.2d:%0.2d:%0.2d"
-		   (date :year)
-		   (+ (date :month) 1)
+                   (date :year)
+                   (+ (date :month) 1)
 
-		   (+ (date :month-day) 1)
-		   (date :hours)
-		   (date :minutes)
-		   (date :seconds))))
+                   (+ (date :month-day) 1)
+                   (date :hours)
+                   (date :minutes)
+                   (date :seconds))))
 
 
 (def note-metas-peg
-  (peg/compile ~{
-		:meta-key (some (if-not (+ ":" "\n") 1))
-		:meta-val (any (if-not "\n" 1))
-		:meta-line (* (<- :meta-key) ":" (<- :meta-val) "\n")
-		:metas (+ "---\n" (* :meta-line :metas))
-		:main (* "---\n" :metas)
-		}))
+  (peg/compile ~{:meta-key (some (if-not (+ ":" "\n") 1))
+                 :meta-val (any (if-not "\n" 1))
+                 :meta-line (* (<- :meta-key) ":" (<- :meta-val) "\n")
+                 :metas (+ "---\n" (* :meta-line :metas))
+                 :main (* "---\n" :metas)}))
 
 (defn parse-metas
   [note-text]
   (let [raw-metas (peg/match note-metas-peg note-text)
-	cleaned (map string/trim raw-metas)
-	metas (struct ;cleaned)
-	mts (metas "timestamp")
-	mtags (metas "tags")
-	timestamp (or (when mts
-			(when-let
-			    [parse (peg/match timestamp-peg mts)]
-			  (parsed-timestamp-to-time ;parse)))
-		      (os/time))
-	tags (or
-	       (when mtags (map string/trim (string/split "," mtags)))
-	       [])
-       ]
+        cleaned (map string/trim raw-metas)
+        metas (struct ;cleaned)
+        mts (metas "timestamp")
+        mtags (metas "tags")
+        timestamp (or (when mts
+                        (when-let
+                          [parse (peg/match timestamp-peg mts)]
+                          (parsed-timestamp-to-time ;parse)))
+                      (os/time))
+        tags (or
+               (when mtags (map string/trim (string/split "," mtags)))
+               [])]
     {:timestamp timestamp :tags (tuple ;tags)}))
 
 # To make an brand-new notebook file, do
@@ -92,7 +87,7 @@
   "mutates notebook and adds new note"
   [notebook new-text]
   (let [meta (parse-metas new-text)
-	note {:text new-text :previous :empty-note}]
+        note {:text new-text :previous :empty-note}]
     (array/push (notebook :notes) {:meta meta :note note})
     notebook))
 

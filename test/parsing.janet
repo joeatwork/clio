@@ -4,7 +4,7 @@
 (def some-note
   {:text "---\ntags: test, new\ntimestamp: 2023-02-03T04:42:32\n---\nHere is some note\nIt is a quality note\n"
    :previous {:text "---\ntags: test, old\ntimestamp: 2023-01-01\n---\nThis is an old version of the note\n"
-	      :previous :empty-note}})
+              :previous :empty-note}})
 
 (test (to-text :empty-note)
       `
