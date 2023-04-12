@@ -100,5 +100,5 @@
 (defn cat
   [filename]
   (let [book (read-notebook filename)]
-    (each note (book :notes) (printf "%p" note))))
-
+    (each {:note note} (book :notes)
+      (print (to-text note)))))
