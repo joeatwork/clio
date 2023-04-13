@@ -65,6 +65,12 @@
                [])]
     {:timestamp timestamp :tags (tuple ;tags)}))
 
+(defn- note-defaults
+  "Assumes {:id :text} from table"
+  [result]
+  (let [now (os/time)]
+    (table/to-struct (merge {:previous :empty-note :timestamp now} result))))
+
 (defn initialize-notebook
   "creates a new SQLite file containing a notebook schema"
   [filename]
@@ -91,7 +97,8 @@
 (defn insert-note
   "adds a note to a SQLite database file named bookname"
   [bookname note]
-  (let [previd (note :previous)
+  (let [note (note-defaults note)
+        previd (note :previous)
         previous (when (not= :empty-note previd) previd)
         text (note :text)
         metas (parse-metas text)
@@ -112,7 +119,6 @@
          ` {:tag tag :new_id new_id}))
     (sqlite3/eval db "COMMIT")))
 
-(def note-proto {:previous :empty-note})
 
 (defn all-notes
   "gets all notes from a SQLite database file named bookname"
@@ -120,7 +126,18 @@
   (def db (sqlite3/open bookname))
   (def results
     (sqlite3/eval db `
-        SELECT rowid AS id, text, previous
+        SELECT rowid AS id, text, previous, timestamp
         FROM notes
         ORDER BY timestamp DESC`))
-  (map |(table/to-struct (merge note-proto $)) results))
+  (map note-defaults results))
+
+(defn note-by-id
+  "gets the note for the given id"
+  [bookname id]
+  (def db (sqlite3/open bookname))
+  (def results
+    (sqlite3/eval db `
+        SELECT rowid AS id, text, previous, timestamp
+        FROM notes
+        WHERE rowid = :id` {:id id}))
+  (note-defaults (0 results)))

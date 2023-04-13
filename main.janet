@@ -14,11 +14,14 @@
     (sh/$ rm ,tfile)
     result))
 
-(defn note [opts]
-  (let [notebook-name (opts "file")
-        tmpl (clio/to-text :empty-note)
+(defn edit [opts]
+  (let [file (opts "file")
+        id (opts "id")
+        previous (if id (clio/note-by-id file id) :empty-note)
+        tmpl (clio/to-text previous)
+        prev-id (or id :empty-note)
         new-text (edit-string tmpl)]
-    (clio/insert-note notebook-name {:text new-text :previous :empty-note})))
+    (clio/insert-note file {:text new-text :previous prev-id})))
 
 (defn init [opts]
   (let [notebook-name (opts "file")]
@@ -30,14 +33,17 @@
         filter (if needle |(string/find needle $) |(do $& true))]
     (each n (clio/all-notes notebook-name)
       (unless (nil? (filter (n :text)))
+        (print "id: " (n :id))
+        (if (not= (n :previous) :empty-note)
+          (print "previous: " (n :previous)))
         (print (n :text))))))
 
 (defn main [&]
   (def opts (argparse/argparse
               "a note-taking tool for the command line"
-              "note"
+              "edit"
               {:kind :flag
-               :help "create a new note"}
+               :help "create or edit a note"}
               "cat"
               {:kind :flag
                :help "dump all notes to standard output"}
@@ -48,12 +54,15 @@
               {:kind :option
                :help "name of notebook file"
                :default "notes.sqlite"}
+              "id"
+              {:kind :option
+               :help "for \"edit\", the id of an existing note to edit"}
               "find"
               {:kind :option
                :help "for \"cat\", include only notes containing this string"}))
 
   (cond
-    (opts "note") (note opts)
+    (opts "edit") (edit opts)
     (opts "cat") (cat opts)
     (opts "init") (init opts)
-    (print "call with --cat, --note, or --init")))
+    (print "call with --cat, --edit, or --init")))
