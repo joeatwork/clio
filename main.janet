@@ -25,9 +25,12 @@
     (clio/initialize-notebook notebook-name)))
 
 (defn cat [opts]
-  (let [notebook-name (opts "file")]
+  (let [notebook-name (opts "file")
+        needle (opts "find")
+        filter (if needle |(string/find needle $) |(do $& true))]
     (each n (clio/all-notes notebook-name)
-      (print (n :text)))))
+      (unless (nil? (filter (n :text)))
+        (print (n :text))))))
 
 (defn main [&]
   (def opts (argparse/argparse
@@ -44,7 +47,10 @@
               "file"
               {:kind :option
                :help "name of notebook file"
-               :default "notes.sqlite"}))
+               :default "notes.sqlite"}
+              "find"
+              {:kind :option
+               :help "for \"cat\", include only notes containing this string"}))
 
   (cond
     (opts "note") (note opts)
