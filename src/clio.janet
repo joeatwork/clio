@@ -1,9 +1,8 @@
-#!/usr/bin/env jane#!/usr/bin/env janet
+(import sqlite3)
 
 # Simple user story
 # I type some bullshit command
 # I then type coach n --tags="databases,yugabyte,whatnot" "bullshit command"
-
 (def empty-note-text
   "---\ntags:\n---\nPut the body of your note here\n")
 
@@ -41,7 +40,6 @@
                    (date :minutes)
                    (date :seconds))))
 
-
 (def note-metas-peg
   (peg/compile ~{:meta-key (some (if-not (+ ":" "\n") 1))
                  :meta-val (any (if-not "\n" 1))
@@ -50,6 +48,7 @@
                  :main (* "---\n" :metas)}))
 
 (defn parse-metas
+  "parses metadata like tags and timestamp out of note text"
   [note-text]
   (let [raw-metas (peg/match note-metas-peg note-text)
         cleaned (map string/trim raw-metas)
@@ -66,34 +65,62 @@
                [])]
     {:timestamp timestamp :tags (tuple ;tags)}))
 
-# To make an brand-new notebook file, do
-# (write-notebook "your-filename.jimage" (empty-notebook))
-(defn empty-notebook
-  "produces an empty notebook. Not often needed"
-  [] @{:notes @[]})
-
-# We want to keep an image with
-(defn write-notebook
-  "writes notes as a pickle into the given filename"
-  [filename notes]
-  (spit filename (marshal notes make-image-dict)))
-
-(defn read-notebook
-  "reads notes from the disk"
+(defn initialize-notebook
+  "creates a new SQLite file containing a notebook schema"
   [filename]
-  (load-image (slurp filename)))
+  (let [db (sqlite3/open filename)]
+    (sqlite3/eval db `
+       CREATE TABLE IF NOT EXISTS notes (
+          timestamp INTEGER,
+          text TEXT,
+          previous INTEGER NULL -- notes.rowid
+       )`)
+    (sqlite3/eval db `CREATE INDEX notes_timestamp_ix ON notes (timestamp)`)
+    (sqlite3/eval db `
+       CREATE TABLE IF NOT EXISTS tags (
+          tag TEXT,
+          note INTEGER -- notes.rowid
+       )`)
+    (sqlite3/eval db `CREATE INDEX tags_tag_ix ON tags (tag)`)
+    (sqlite3/eval db `
+       CREATE TABLE schema_version (
+          version INTEGER
+       )`)
+    (sqlite3/eval db `INSERT INTO schema_version (version) VALUES (1)`)))
 
-(defn add-note!
-  "mutates notebook and adds new note"
-  [notebook new-text]
-  (let [meta (parse-metas new-text)
-        note {:text new-text :previous :empty-note}]
-    (array/push (notebook :notes) {:meta meta :note note})
-    notebook))
+(defn insert-note
+  "adds a note to a SQLite database file named bookname"
+  [bookname note]
+  (let [previd (note :previous)
+        previous (when (not= :empty-note previd) previd)
+        text (note :text)
+        metas (parse-metas text)
+        db (sqlite3/open bookname)]
+    (sqlite3/eval db `
+       INSERT INTO notes (timestamp, text, previous)
+         VALUES (:timestamp, :text, :previous)
+       ` {:timestamp (metas :timestamp)
+          :text text
+          :previous previous})
 
-# TODO remove
-(defn cat
-  [filename]
-  (let [book (read-notebook filename)]
-    (each {:note note} (book :notes)
-      (print (to-text note)))))
+    (def new_id (sqlite3/last-insert-rowid db))
+    (sqlite3/eval db "BEGIN TRANSACTION")
+    (each tag (metas :tags)
+      (sqlite3/eval db `
+         INSERT INTO tags (tag, note)
+           VALUES (:tag, :new_id)  
+         ` {:tag tag :new_id new_id}))
+    (sqlite3/eval db "COMMIT")))
+
+(def note-proto {:previous :empty-note})
+
+(defn all-notes
+  "gets all notes from a SQLite database file named bookname"
+  [bookname]
+  (def db (sqlite3/open bookname))
+  (def results
+    (sqlite3/eval db `
+        SELECT rowid AS id, text, previous
+        FROM notes
+        ORDER BY timestamp DESC`))
+  (map |(table/to-struct (merge note-proto $)) results))

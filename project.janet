@@ -6,7 +6,8 @@
     :tag "v0.0.1"}
    {:url "https://github.com/ianthehenry/judge.git"
     :tag "v2.3.1"}
-   {:url "https://github.com/janet-lang/spork.git"}])
+   {:url "https://github.com/janet-lang/spork.git"}
+   {:url "https://github.com/janet-lang/sqlite3.git"}])
 
 
 (declare-executable

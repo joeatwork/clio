@@ -16,24 +16,18 @@
 
 (defn note [opts]
   (let [notebook-name (opts "file")
-        book (try
-               (clio/read-notebook notebook-name)
-               ([err]
-                 (do
-                   (eprintf "can't find %s: creating" notebook-name)
-                   (clio/empty-notebook))))
         tmpl (clio/to-text :empty-note)
-        new-text (edit-string tmpl)
-        new-book (clio/add-note! book new-text)]
-    (clio/write-notebook notebook-name new-book)))
+        new-text (edit-string tmpl)]
+    (clio/insert-note notebook-name {:text new-text :previous :empty-note})))
 
 (defn init [opts]
   (let [notebook-name (opts "file")]
-    (clio/write-notebook notebook-name (clio/empty-notebook))))
+    (clio/initialize-notebook notebook-name)))
 
 (defn cat [opts]
   (let [notebook-name (opts "file")]
-    (clio/cat notebook-name)))
+    (each n (clio/all-notes notebook-name)
+      (print (n :text)))))
 
 (defn main [&]
   (def opts (argparse/argparse
@@ -50,7 +44,7 @@
               "file"
               {:kind :option
                :help "name of notebook file"
-               :default "notes.jimage"}))
+               :default "notes.sqlite"}))
 
   (cond
     (opts "note") (note opts)
