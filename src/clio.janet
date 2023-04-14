@@ -121,14 +121,16 @@
 
 
 (defn all-notes
-  "gets all notes from a SQLite database file named bookname"
+  "gets all \"current\" notes from a SQLite database file named bookname"
   [bookname]
   (def db (sqlite3/open bookname))
   (def results
     (sqlite3/eval db `
-        SELECT rowid AS id, text, previous, timestamp
-        FROM notes
-        ORDER BY timestamp DESC`))
+        SELECT n.rowid AS id, n.text, n.previous, n.timestamp
+        FROM notes AS n
+          LEFT JOIN notes AS edits ON n.rowid=edits.previous
+        WHERE edits.previous IS NULL
+        ORDER BY n.timestamp DESC`))
   (map note-defaults results))
 
 (defn note-by-id
