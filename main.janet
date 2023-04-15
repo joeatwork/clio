@@ -13,6 +13,8 @@
 #     # fires the missles
 #     missles_away --please
 #
+# Scheme is to use magic metadata to mark a note
+# as a mustache template, with a name.
 
 (defn edit-string
   "dumps a string into an editor, opens $EDITOR"
@@ -48,17 +50,23 @@
 (cmd/main
   (cmd/group
     "a note-taking tool for the command line"
-    edit (cmd/fn "create or edit a note"
-                 [--id "id of an existing note" (optional :string)
-                  --file "name of a notebook file" (optional :string)]
+    edit (cmd/fn "create or edit a note interactively"
+                 [--id "id of an existing note" (optional :int+)
+                  --file "name of a notebook file" (optional :file)]
                  (edit (or-default-file file) id))
     cat (cmd/fn "print notes to stdout"
                 [--find "print only notes containing this text"
                  (optional :string)
-                 --file "name of a notebook file" (optional :string)]
+                 --file "name of a notebook file" (optional :file)]
                 (cat (or-default-file file) find))
     init (cmd/fn "create a new notebook file"
-                 [--file "name of a notebook file" (optional :string)]
+                 [--file "name of a notebook file" (optional :file)]
                  (let [f (or-default-file file)]
-                   (print "creating " f)
-                   (clio/initialize-notebook (or-default-file file))))))
+                   (clio/initialize-notebook (or-default-file file))))
+    templ (cmd/fn "create a note by expanding another note as a mustache template"
+                  [--file "name of a notebook file" (optional :file)
+                   template-id "id or name of a template" (required :string)
+                   kvs "list of key/value pairs for the template" (escape :string)]
+                  (let [kwd_kvs (mapcat |[(keyword ($ kvs)) ((+ $ 1) kvs)] (range 0 (length kvs) 2))
+                        env (struct ;kwd_kvs)]
+                    (clio/note-from-template (or-default-file file) template-id env)))))

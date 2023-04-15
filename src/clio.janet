@@ -1,4 +1,5 @@
 (import sqlite3)
+(import musty)
 
 (def empty-note-text
   "---\ntags:\n---\nPut the body of your note here\n")
@@ -120,7 +121,6 @@
          ` {:tag tag :new_id new_id}))
     (sqlite3/eval db "COMMIT")))
 
-
 (defn all-notes
   "gets all \"current\" notes from a SQLite database file named bookname"
   [bookname]
@@ -136,11 +136,18 @@
 
 (defn note-by-id
   "gets the note for the given id"
-  [bookname id]
-  (def db (sqlite3/open bookname))
+  [file id]
+  (def db (sqlite3/open file))
   (def results
     (sqlite3/eval db `
         SELECT rowid AS id, text, previous, timestamp
         FROM notes
         WHERE rowid = :id` {:id id}))
-  (note-defaults (0 results)))
+  (note-defaults (first results)))
+
+(defn note-from-template
+  "uses a given id as a template to create and insert a new note"
+  [file template-id env]
+  (let [templ (note-by-id file template-id)
+        new-text (musty/render (templ :text) env)]
+    (print new-text)))
