@@ -8,6 +8,7 @@
     :tag "v2.3.1"}
    {:url "https://github.com/ianthehenry/cmd.git"
     :tag "v1.0.4"}
+   {:url "https://github.com/pyrmont/musty"}
    {:url "https://github.com/janet-lang/sqlite3.git"}])
 
 

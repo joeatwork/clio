@@ -1,8 +1,5 @@
 (import sqlite3)
 
-# Simple user story
-# I type some bullshit command
-# I then type coach n --tags="databases,yugabyte,whatnot" "bullshit command"
 (def empty-note-text
   "---\ntags:\n---\nPut the body of your note here\n")
 
@@ -87,12 +84,16 @@
           tag TEXT,
           note INTEGER -- notes.rowid
        )`)
-    (sqlite3/eval db `CREATE INDEX tags_tag_ix ON tags (tag)`)
+    (sqlite3/eval db `CREATE INDEX IF NOT EXISTS tags_tag_ix ON tags (tag)`)
     (sqlite3/eval db `
-       CREATE TABLE schema_version (
+       CREATE TABLE IF NOT EXISTS schema_version (
+          k INTEGER PRIMARY KEY,
           version INTEGER
        )`)
-    (sqlite3/eval db `INSERT INTO schema_version (version) VALUES (1)`)))
+    (sqlite3/eval db `
+      INSERT INTO schema_version (k, version) VALUES (1, 2)
+        ON CONFLICT (k) DO UPDATE SET version=2
+      `)))
 
 (defn insert-note
   "adds a note to a SQLite database file named bookname"
