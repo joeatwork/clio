@@ -42,18 +42,23 @@
           (print "previous: " (n :previous)))
         (print (n :text))))))
 
+(defn or-default-file [f?]
+  (or f? (string/format "%s/notes.sqlite" (os/getenv "HOME"))))
+
 (cmd/main
   (cmd/group
     "a note-taking tool for the command line"
     edit (cmd/fn "create or edit a note"
                  [--id "id of an existing note" (optional :string)
-                  --file "name of a notebook file" (optional :string "notes.sqlite")]
-                 (edit file id))
+                  --file "name of a notebook file" (optional :string)]
+                 (edit (or-default-file file) id))
     cat (cmd/fn "print notes to stdout"
                 [--find "print only notes containing this text"
                  (optional :string)
-                 --file "name of a notebook file" (optional :string "notes.sqlite")]
-                (cat file find))
+                 --file "name of a notebook file" (optional :string)]
+                (cat (or-default-file file) find))
     init (cmd/fn "create a new notebook file"
-                 [--file "name of a notebook file" (optional :string "notes.sqlite")]
-                 (clio/initialize-notebook file))))
+                 [--file "name of a notebook file" (optional :string)]
+                 (let [f (or-default-file file)]
+                   (print "creating " f)
+                   (clio/initialize-notebook (or-default-file file))))))

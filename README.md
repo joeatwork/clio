@@ -1,6 +1,27 @@
-Clio
+# Clio
 
-A rudimentary note-taking tool for the command line.
+An extremely bare bones note taking tool for use at the command line.
+
+## Usage
+
+The instructions in `Building` below produce an executable file `./build/clio`
+
+You can get usage instructions from that executable with
+
+```
+$ ./build/clio --help
+```
+
+You can get instructions for individual subcommands with
+
+```
+$ ./build/clio edit --help
+```
+
+Clio stores notes in a file named ~/notes.sqlite by default.
+You can change this by providing a --file argument to the command.
+
+## Building
 
 To build and run:
 ```console
@@ -15,3 +36,4 @@ To format the source files, run
 $ find . \( -name jpm_tree -prune \) -o \( -name \*.janet -print \) | \
     xargs janet ./jpm_tree/bin/janet-format
 ```
+
