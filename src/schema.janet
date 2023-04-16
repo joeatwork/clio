@@ -58,15 +58,15 @@
   (when (not (any? version_exists))
     (to-version-1 db))
 
-  (def version
-    (sqlite3/eval db
-                  "SELECT MAX(version) FROM schema_version"))
-  (cond
-    (= version 1)
-    (do
-      (to-version-2 db)
-      (migrate-schema-forward db))
-    (= version 2)
-    (do
-      (to-version-3 db)
-      (migrate-schema-forward db))))
+  (let [vresult (sqlite3/eval db "SELECT MAX(version) AS v FROM schema_version")
+        version ((first vresult) :v)]
+
+    (cond
+      (= version 1)
+      (do
+        (to-version-2 db)
+        (migrate-schema-forward db))
+      (= version 2)
+      (do
+        (to-version-3 db)
+        (migrate-schema-forward db)))))

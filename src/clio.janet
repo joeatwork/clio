@@ -55,6 +55,7 @@
         metas (struct ;cleaned)
         mts (metas "timestamp")
         mtags (metas "tags")
+        title (metas "title")
         timestamp (or (when mts
                         (when-let
                           [parse (peg/match timestamp-peg mts)]
@@ -63,7 +64,7 @@
         tags (or
                (when mtags (map string/trim (string/split "," mtags)))
                [])]
-    {:timestamp timestamp :tags (tuple ;tags)}))
+    {:timestamp timestamp :tags (tuple ;tags) :title title}))
 
 (defn- note-defaults
   "Assumes {:id :text} from table"
@@ -87,11 +88,12 @@
         metas (parse-metas text)
         db (sqlite3/open bookname)]
     (sqlite3/eval db `
-       INSERT INTO notes (timestamp, text, previous)
-         VALUES (:timestamp, :text, :previous)
+       INSERT INTO notes (timestamp, text, title, previous)
+         VALUES (:timestamp, :text, :title, :previous)
        ` {:timestamp (metas :timestamp)
           :text text
-          :previous previous})
+          :previous previous
+          :title (metas :title)})
 
     (def new_id (sqlite3/last-insert-rowid db))
     (sqlite3/eval db "BEGIN TRANSACTION")
