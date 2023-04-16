@@ -60,7 +60,7 @@
 
   (def version
     (sqlite3/eval db
-		  "SELECT MAX(version) FROM schema_version"))
+                  "SELECT MAX(version) FROM schema_version"))
   (cond
     (= version 1)
     (do
