@@ -150,4 +150,5 @@
   [file template-id env]
   (let [templ (note-by-id file template-id)
         new-text (musty/render (templ :text) env)]
+    (insert-note file {:text new-text :previous :empty-note})
     (print new-text)))
