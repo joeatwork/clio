@@ -70,16 +70,22 @@
     (table/to-struct (merge {:previous :empty-note :timestamp now} result))))
 
 (defn initialize-notebook
-  "creates a new SQLite file containing a notebook schema"
+  "creates or updates a SQLite file containing a notebook schema"
   [filename]
-  (let [db (sqlite3/open filename)]
+  (def db (sqlite3/open filename))
+  (def version_exists (sqlite3/eval db `
+     SELECT TRUE FROM sqlite_master
+     WHERE name='schema_version'
+       AND type='table'`))
+
+  (when (not (any? version_exists))
     (sqlite3/eval db `
        CREATE TABLE IF NOT EXISTS notes (
           timestamp INTEGER,
           text TEXT,
           previous INTEGER NULL -- notes.rowid
        )`)
-    (sqlite3/eval db `CREATE INDEX notes_timestamp_ix ON notes (timestamp)`)
+    (sqlite3/eval db `CREATE INDEX IF NOT EXISTS notes_timestamp_ix ON notes (timestamp)`)
     (sqlite3/eval db `
        CREATE TABLE IF NOT EXISTS tags (
           tag TEXT,
@@ -88,13 +94,36 @@
     (sqlite3/eval db `CREATE INDEX IF NOT EXISTS tags_tag_ix ON tags (tag)`)
     (sqlite3/eval db `
        CREATE TABLE IF NOT EXISTS schema_version (
-          k INTEGER PRIMARY KEY,
           version INTEGER
        )`)
     (sqlite3/eval db `
-      INSERT INTO schema_version (k, version) VALUES (1, 2)
-        ON CONFLICT (k) DO UPDATE SET version=2
-      `)))
+      INSERT INTO schema_version (version) VALUES (1)
+      `))
+
+  (let [version (sqlite3/eval db "SELECT MAX(version) FROM schema_version")]
+    (cond
+      (= version 1)
+      (do
+        (sqlite3/eval db `BEGIN TRANSACTION`)
+        (sqlite3/eval db `ALTER TABLE schema_version ADD COLUMN k INTEGER`)
+        (sqlite3/eval db `UPDATE schema_version SET k=1`)
+        (sqlite3/eval db `
+           CREATE UNIQUE INDEX schema_version_k_ix
+           ON schema_version (k)`)
+        (sqlite3/eval db `UPDATE schema_version SET version=2 WHERE k=1`)
+        (sqlite3/eval db `COMMIT`)
+        (initialize-notebook db))
+      (= version 2)
+      (do
+        (sqlite3/eval db `BEGIN TRANSACTION`)
+        (sqlite3/eval db `ALTER TABLE notes ADD COLUMN title TEXT NULL`)
+        (sqlite3/eval db `
+         CREATE UNIQUE INDEX notes_title_ix
+         ON notes (title)
+         WHERE title IS NOT NULL`)
+        (sqlite3/eval db `UPDATE schema_version SET version=3 WHERE k=1`)
+        (sqlite3/eval db `COMMIT`)
+        (initialize-notebook db)))))
 
 (defn insert-note
   "adds a note to a SQLite database file named bookname"
