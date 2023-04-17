@@ -51,7 +51,7 @@
   (cmd/group
     "a note-taking tool for the command line"
     edit (cmd/fn "create or edit a note interactively"
-                 [--id "id of an existing note" (optional :int+)
+                 [--id "id or title of an existing note" (optional :string)
                   --file "name of a notebook file" (optional :file)]
                  (edit (or-default-file file) id))
     cat (cmd/fn "print notes to stdout"

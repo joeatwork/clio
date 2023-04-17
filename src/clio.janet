@@ -66,6 +66,27 @@
                [])]
     {:timestamp timestamp :tags (tuple ;tags) :title title}))
 
+(defn reserialize-metas
+  "rewrites note :text to match note metas"
+  [metas text]
+  (def timestamp
+    [(string "timestamp: " (format-timestamp (metas :timestamp)))])
+  (def tags
+    (if (metas :tags)
+      [(string "tags: " (string/join (metas :tags) ", "))]
+      []))
+  (def title
+    (if (metas :title)
+      [(string "title: " (metas :title))]
+      []))
+  (def trailer
+    (peg/replace note-metas-peg "" text)) 
+    (string
+     "---\n"
+     (string/join [;title ;tags ;timestamp] "\n")
+     "\n---\n"
+     trailer))
+
 (defn- note-defaults
   "Assumes {:id :text} from table"
   [result]
@@ -137,7 +158,11 @@
 (defn note-from-template
   "uses a given id as a template to create and insert a new note"
   [file template-id env]
-  (let [templ (one-note file template-id)
-        new-text (musty/render (templ :text) env)]
+  (def raw-templ (one-note file template-id))
+  (def tmetas (struct/to-table (parse-metas (raw-templ :text))))
+  (put tmetas :title nil)
+  (def templ (reserialize-metas tmetas (raw-templ :text)))
+  (pp templ) # TODO
+  (let [new-text (musty/render templ env)]
     (insert-note file {:text new-text :previous :empty-note})
     (print new-text)))
