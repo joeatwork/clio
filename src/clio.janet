@@ -162,7 +162,6 @@
   (def tmetas (struct/to-table (parse-metas (raw-templ :text))))
   (put tmetas :title nil)
   (def templ (reserialize-metas tmetas (raw-templ :text)))
-  (pp templ) # TODO
   (let [new-text (musty/render templ env)]
     (insert-note file {:text new-text :previous :empty-note})
     (print new-text)))
