@@ -29,7 +29,7 @@
     result))
 
 (defn edit [file id?]
-  (let [previous (if id? (clio/note-by-id file id?) :empty-note)
+  (let [previous (if id? (clio/one-note file id?) :empty-note)
         tmpl (clio/to-text previous)
         prev-id (or id? :empty-note)
         new-text (edit-string tmpl)]

@@ -40,10 +40,6 @@
   [db]
   (sqlite3/eval db `BEGIN TRANSACTION`)
   (sqlite3/eval db `ALTER TABLE notes ADD COLUMN title TEXT NULL`)
-  (sqlite3/eval db `
-           CREATE UNIQUE INDEX notes_title_ix
-           ON notes (title)
-           WHERE title IS NOT NULL`)
   (sqlite3/eval db `UPDATE schema_version SET version=3 WHERE k=1`)
   (sqlite3/eval db `COMMIT`))
 

@@ -110,28 +110,34 @@
   (def db (sqlite3/open bookname))
   (def results
     (sqlite3/eval db `
-        SELECT n.rowid AS id, n.text, n.previous, n.timestamp
+        SELECT n.rowid AS id, n.text, n.previous, n.title, n.timestamp
         FROM notes AS n
           LEFT JOIN notes AS edits ON n.rowid=edits.previous
         WHERE edits.previous IS NULL
         ORDER BY n.timestamp DESC`))
   (map note-defaults results))
 
-(defn note-by-id
-  "gets the note for the given id"
-  [file id]
+(defn one-note
+  "gets the note for the given id or title"
+  [file identifier]
   (def db (sqlite3/open file))
   (def results
+    # sorting hack also relies on all "previous" ids being
+    # smaller than descendant ids, and NULL titles sorting
+    # behind non-null titles.
     (sqlite3/eval db `
-        SELECT rowid AS id, text, previous, timestamp
+        SELECT rowid AS id, text, previous, title, timestamp
         FROM notes
-        WHERE rowid = :id` {:id id}))
+        WHERE rowid = :identifier
+          OR title = :identifier
+        ORDER BY title DESC, rowid DESC
+        LIMIT 1` {:identifier identifier}))
   (note-defaults (first results)))
 
 (defn note-from-template
   "uses a given id as a template to create and insert a new note"
   [file template-id env]
-  (let [templ (note-by-id file template-id)
+  (let [templ (one-note file template-id)
         new-text (musty/render (templ :text) env)]
     (insert-note file {:text new-text :previous :empty-note})
     (print new-text)))
