@@ -2,20 +2,6 @@
 (import cmd)
 (import ./src/clio)
 
-# Here's a use case I'd like to cover:
-#
-#     $ missles_away --please
-#     $ clio -t command :note "fires the missles" :command "!!"
-#     $ clio cat --find "fires"
-#     ---
-#     tags: command
-#     ---
-#     # fires the missles
-#     missles_away --please
-#
-# Scheme is to use magic metadata to mark a note
-# as a mustache template, with a name.
-
 (defn edit-string
   "dumps a string into an editor, opens $EDITOR"
   [&opt s]
@@ -51,22 +37,21 @@
   (cmd/group
     "a note-taking tool for the command line"
     edit (cmd/fn "create or edit a note interactively"
-                 [--id "id or title of an existing note" (optional :string)
-                  --file "name of a notebook file" (optional :file)]
+                 [--id "id or title of an existing note" (optional ["ID" :string])
+                  --file "name of a notebook file for storing your note" (optional :file)]
                  (edit (or-default-file file) id))
     cat (cmd/fn "print notes to stdout"
-                [--find "print only notes containing this text"
-                 (optional :string)
-                 --file "name of a notebook file" (optional :file)]
+                [--find "print only notes containing this text" (optional :string)
+                 --file "name of a notebook file to open" (optional :file)]
                 (cat (or-default-file file) find))
-    init (cmd/fn "create a new notebook file"
+    init (cmd/fn "create or update a notebook file to work with the current version of clio"
                  [--file "name of a notebook file" (optional :file)]
                  (let [f (or-default-file file)]
                    (clio/initialize-notebook (or-default-file file))))
     templ (cmd/fn "create a note by expanding another note as a mustache template"
                   [--file "name of a notebook file" (optional :file)
-                   template-id "id or name of a template" (required :string)
-                   kvs "list of key/value pairs for the template" (escape :string)]
+                   template-id "id or name of a template" (required ["ID" :string])
+                   kvs "list of key/value pairs for the template" (escape ["KEY/VALUE" :string])]
                   (let [kwd_kvs (mapcat |[(keyword ($ kvs)) ((+ $ 1) kvs)] (range 0 (length kvs) 2))
                         env (struct ;kwd_kvs)]
                     (clio/note-from-template (or-default-file file) template-id env)))))
