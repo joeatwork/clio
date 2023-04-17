@@ -40,7 +40,7 @@ $ clio edit --id next-actions
 ```
 
 The `clio templ` command expands a mustache template in an old note into
-a new note. I have a template with the title "tc" that looks like this.
+a new note. I have a template with the title "tcommand" that looks like this.
 
 ```
 ---
