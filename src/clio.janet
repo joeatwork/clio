@@ -113,8 +113,8 @@
          VALUES (:timestamp, :text, :title, :previous)
        ` {:timestamp (metas :timestamp)
           :text text
-          :previous previous
-          :title (metas :title)})
+          :title (metas :title)
+          :previous previous})
 
     (def new_id (sqlite3/last-insert-rowid db))
     (sqlite3/eval db "BEGIN TRANSACTION")

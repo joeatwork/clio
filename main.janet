@@ -17,7 +17,7 @@
 (defn edit [file id?]
   (let [previous (if id? (clio/one-note file id?) :empty-note)
         tmpl (clio/to-text previous)
-        prev-id (or id? :empty-note)
+        prev-id (if previous (previous :id) :empty-note)
         new-text (edit-string tmpl)]
     (clio/insert-note file {:text new-text :previous prev-id})))
 
