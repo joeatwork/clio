@@ -5,7 +5,7 @@
 (defn edit-string
   "dumps a string into an editor, opens $EDITOR"
   [&opt s]
-  (let [editor-bin (or ((os/environ) "EDITOR") "vi")
+  (let [editor-bin (or ((os/environ) "CLIO_EDITOR") ((os/environ) "EDITOR") "vi")
         tfile (sh/$<_ mktemp -t "clio-scratch")]
     (when s (spit tfile s))
     (sh/$ ,editor-bin ,tfile)
@@ -17,7 +17,7 @@
 (defn edit [file id?]
   (let [previous (if id? (clio/one-note file id?) :empty-note)
         tmpl (clio/to-text previous)
-        prev-id (if previous (previous :id) :empty-note)
+        prev-id (if id? (previous :id) :empty-note)
         new-text (edit-string tmpl)]
     (clio/insert-note file {:text new-text :previous prev-id})))
 
