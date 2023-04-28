@@ -17,27 +17,24 @@
 
 (test (all-notes "test-notebook.sqlite")
       @[{:id 1
-	 :previous :empty-note
-	 :text "---\ntimestamp: 2023-01-14\n---\nhello\n"
-	 :timestamp 1673654400}
-	{:id 3
-	 :previous 2
-	 :text "---\ntags: good, bad\ntimestamp: 2023-01-13\ntitle: test title\n---\nbenvenuti\n"
-	 :timestamp 1673568000
-	 :title "test title"}])
+         :previous :empty-note
+         :text "---\ntimestamp: 2023-01-14\n---\nhello\n"
+         :timestamp 1673654400}
+        {:id 3
+         :previous 2
+         :text "---\ntags: good, bad\ntimestamp: 2023-01-13\ntitle: test title\n---\nbenvenuti\n"
+         :timestamp 1673568000
+         :title "test title"}])
 
 (test (one-note "test-notebook.sqlite" 1)
-        {:id 1
-	 :previous :empty-note
-	 :text "---\ntimestamp: 2023-01-14\n---\nhello\n"
-	 :timestamp 1673654400})
+      {:id 1
+       :previous :empty-note
+       :text "---\ntimestamp: 2023-01-14\n---\nhello\n"
+       :timestamp 1673654400})
 
 (test (one-note "test-notebook.sqlite" "test title")
- 	{:id 3
-	 :previous 2
-	 :text "---\ntags: good, bad\ntimestamp: 2023-01-13\ntitle: test title\n---\nbenvenuti\n"
-	 :timestamp 1673568000
-	 :title "test title"})
-
-     
-		
+      {:id 3
+       :previous 2
+       :text "---\ntags: good, bad\ntimestamp: 2023-01-13\ntitle: test title\n---\nbenvenuti\n"
+       :timestamp 1673568000
+       :title "test title"})

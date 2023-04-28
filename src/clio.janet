@@ -66,6 +66,11 @@
                [])]
     {:timestamp timestamp :tags (tuple ;tags) :title title}))
 
+(defn body
+  "returns the given text with note headers removed"
+  [text]
+  (peg/replace note-metas-peg "" text))
+
 (defn reserialize-metas
   "rewrites note :text to match note metas"
   [metas text]
@@ -79,13 +84,11 @@
     (if (metas :title)
       [(string "title: " (metas :title))]
       []))
-  (def trailer
-    (peg/replace note-metas-peg "" text)) 
-    (string
-     "---\n"
-     (string/join [;title ;tags ;timestamp] "\n")
-     "\n---\n"
-     trailer))
+  (string
+    "---\n"
+    (string/join [;title ;tags ;timestamp] "\n")
+    "\n---\n"
+    (body text)))
 
 (defn- note-defaults
   "Assumes {:id :text} from table"

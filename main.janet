@@ -14,21 +14,36 @@
     (sh/$ rm ,tfile)
     result))
 
-(defn edit [file id?]
+(defn read-stdin
+  []
+  "slurps stdin into memory and formats it as a note"
+  (let [raw (file/read stdin :all)
+        headered (if (string/has-prefix? "---\n" raw)
+                   raw
+                   (clio/reserialize-metas {:timestamp (os/time)} raw))]
+    headered))
+
+(defn edit [file id? stdin?]
   (let [previous (if id? (clio/one-note file id?) :empty-note)
         tmpl (clio/to-text previous)
         prev-id (if id? (previous :id) :empty-note)
-        new-text (edit-string tmpl)]
+        new-text (if stdin? (read-stdin) (edit-string tmpl))]
     (clio/insert-note file {:text new-text :previous prev-id})))
 
-(defn cat [file find?]
-  (let [filter (if find? |(string/find find? $) |(do $& true))]
-    (each n (clio/all-notes file)
-      (unless (nil? (filter (n :text)))
-        (print "id: " (n :id))
-        (if (not= (n :previous) :empty-note)
-          (print "previous: " (n :previous)))
-        (print (n :text))))))
+(defn cat [file find? id? body-only]
+  (let [filter (if find? |(string/find find? $) |(do $& true))
+        unfiltered (if id? [(clio/one-note file id?)]
+                     (clio/all-notes file))]
+    (each n unfiltered
+      (def txt (n :text))
+      (unless (nil? (filter txt))
+        (if body-only
+          (print (clio/body txt))
+          (do
+            (print "id: " (n :id))
+            (if (not= (n :previous) :empty-note)
+              (print "previous: " (n :previous)))
+            (print txt)))))))
 
 (defn or-default-file [f?]
   (or f? (string/format "%s/notes.sqlite" (os/getenv "HOME"))))
@@ -38,12 +53,15 @@
     "a note-taking tool for the command line"
     edit (cmd/fn "create or edit a note interactively"
                  [--id "id or title of an existing note" (optional ["ID" :string])
-                  --file "name of a notebook file for storing your note" (optional :file)]
-                 (edit (or-default-file file) id))
+                  --file "name of a notebook file for storing your note" (optional :file)
+                  --stdin "read the note from standard input rather than opening an editor" (flag)]
+                 (edit (or-default-file file) id stdin))
     cat (cmd/fn "print notes to stdout"
-                [--find "print only notes containing this text" (optional :string)
+                [--body "omit headers and metadata from output" (flag)
+                 --id "id or title of an existing note" (optional ["ID" :string])
+                 --find "print only notes containing this text" (optional :string)
                  --file "name of a notebook file to open" (optional :file)]
-                (cat (or-default-file file) find))
+                (cat (or-default-file file) find id body))
     init (cmd/fn "create or update a notebook file to work with the current version of clio"
                  [--file "name of a notebook file" (optional :file)]
                  (let [f (or-default-file file)]

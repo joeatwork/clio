@@ -33,12 +33,12 @@ It is a quality note
       {:tags ["test" "good times"] :timestamp 1675399352})
 
 (def updated
- (reserialize-metas
-  {:tags ["up" "down"]
-   :title "newt"
-   :timestamp 1681689107
-   :useless "unchanged"}
-   "---\ntitle: oldt\ntags: a, b\ntimestamp: 2023-02-03T04:42:32\n---\nSome good stuff"))
+  (reserialize-metas
+    {:tags ["up" "down"]
+     :title "newt"
+     :timestamp 1681689107
+     :useless "unchanged"}
+    "---\ntitle: oldt\ntags: a, b\ntimestamp: 2023-02-03T04:42:32\n---\nSome good stuff"))
 
 (test updated
       "---\ntitle: newt\ntags: up, down\ntimestamp: 2023-04-16T23:51:47\n---\nSome good stuff")
