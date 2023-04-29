@@ -31,20 +31,25 @@
     (clio/insert-note file {:text new-text :previous prev-id})))
 
 (defn cat [file find? id? output-part?]
-  (let [filter (if find? |(string/find find? $) |(do $& true))
-        unfiltered (if id? [(clio/one-note file id?)]
-                     (clio/all-notes file))]
-    (each n unfiltered
-      (def txt (n :text))
-      (unless (nil? (filter txt))
-        (cond
-          (= output-part? :body) (print (clio/body txt))
-          (= output-part? :title) (print (or (n :title) (n :id)))
-          (do
-            (print "id: " (n :id))
-            (if (not= (n :previous) :empty-note)
-              (print "previous: " (n :previous)))
-            (print txt)))))))
+  (def unfiltered (if id? [(clio/one-note file id?)]
+                    (clio/all-notes file)))
+  (def filter
+    (cond
+      find? |(string/find find? ($ :text))
+      (= output-part? :title) |($ :title)
+      |(do $& true)))
+
+  (each n unfiltered
+    (def txt (n :text))
+    (unless (nil? (filter n))
+      (cond
+        (= output-part? :body) (print (clio/body txt))
+        (= output-part? :title) (print (or (n :title) (n :id)))
+        (do
+          (print "id: " (n :id))
+          (if (not= (n :previous) :empty-note)
+            (print "previous: " (n :previous)))
+          (print txt))))))
 
 (defn or-default-file [f?]
   (or f? (string/format "%s/notes.sqlite" (os/getenv "HOME"))))
