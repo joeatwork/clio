@@ -52,7 +52,7 @@
           (print txt))))))
 
 (defn or-default-file [f?]
-  (or f? (string/format "%s/notes.sqlite" (os/getenv "HOME"))))
+  (or f? ((os/environ) "CLIO_FILE") (string/format "%s/notes.sqlite" (os/getenv "HOME"))))
 
 (cmd/main
   (cmd/group
